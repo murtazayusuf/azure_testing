@@ -17,23 +17,20 @@ from bs4 import BeautifulSoup
 import logging 
 import azure.functions as func
 
-colorama.init(autoreset=True)
 
-xml = open("TimerTrigger1/body.xml").read()
-df = pd.read_json("TimerTrigger1/HttpClientConfig.json")
-headers = df['headers'][0]
-url = df['url'][0]
-
-f_index = xml.find("<ns:sqlQuery>")+14
-r_index = xml.find("</ns:sqlQuery>")-1
-
-n_queries = len(df["sqlQueries"][0])
-queries = []
-for i in range(n_queries):
-    queries += [df["sqlQueries"][0][i]['SqlQuery']]
-
-def get_records():
+def get_records(xml, df):
     print(f"{Fore.YELLOW}Getting the data from client...")
+    headers = df['headers'][0]
+    url = df['url'][0]
+
+    f_index = xml.find("<ns:sqlQuery>")+14
+    r_index = xml.find("</ns:sqlQuery>")-1
+
+    n_queries = len(df["sqlQueries"][0])
+    queries = []
+    for i in range(n_queries):
+        queries += [df["sqlQueries"][0][i]['SqlQuery']]
+
     loc_files = []
     for query in queries:
         data = xml.replace(xml[f_index:r_index], query)
@@ -83,7 +80,6 @@ def get_records():
     print(f"{Fore.GREEN}Records recieved successfully!")
     return loc_files
 
-
 def load_config():
     """
     This function loads the config file.
@@ -91,14 +87,6 @@ def load_config():
     dir_root = os.path.dirname(os.path.abspath(__file__))
     with open(dir_root + "\config.yaml", "r") as yamlfile:
         return yaml.load(yamlfile, Loader=yaml.FullLoader)
-
-config = load_config()
-server = config['server']
-database = config['database']
-username = config['username']
-password = config['password']   
-driver= '{ODBC Driver 17 for SQL Server}'
-conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
 
 def enum_paths(connection_string, container_name):
     file_system = FileSystemClient.from_connection_string(connection_string, file_system_name=container_name)
@@ -118,9 +106,6 @@ def enum_paths(connection_string, container_name):
         if path.find(latest_dir) != -1:
             latest_path += [path]
     return latest_dir[:-1]
-# print(queries)
-files = get_records()
-latest_dir = enum_paths(config["azure_storage_connectionstring"], config["json_container"])
 
 def upload_raw(latest_dir, connection_string, container_name, files):
     print(f"{Fore.YELLOW}Uploading records in datalake, This process might take a while...")
@@ -151,9 +136,7 @@ def upload_raw(latest_dir, connection_string, container_name, files):
     print(f"{Fore.GREEN}Data written into the datalake successfully!!")
     return processed
 
-files = upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], files)
-
-def create_table(table, data):
+def create_table(table, data, conn):
     """
     This function creates a table in the database. Call this function only once or it will raise an error.
     """
@@ -175,7 +158,7 @@ def create_table(table, data):
         return False
         # print(e)
 
-def write_data_in_sql(table_name, data):
+def write_data_in_sql(table_name, data, conn):
     """
     This function writes the json file into the sql database table given in 'table_name' argument.
     """
@@ -227,7 +210,7 @@ def write_data_in_sql(table_name, data):
         print(f"{Fore.RED}Following error occurred during execution:")
         print(str(e))
 
-def write_all(files):
+def write_all(files, conn):
     """
     This function writes the records into the corresponding tables in the database.
     """
@@ -239,23 +222,31 @@ def write_all(files):
         df.columns = cols
         table = df['tablename'][0]
         df = df.drop('tablename', axis=1)
-        create_table(table=table, data=df)
-        write_data_in_sql(table_name=table, data=df)
+        create_table(table=table, data=df, conn=conn)
+        write_data_in_sql(table_name=table, data=df, conn=conn)
         os.remove(path)
 
-# files = ["2021_Jul_20_17_13_19_234694_processed_response.json"]
-# files = ["2021_Jul_20_18_46_22_979459_processed_response.json"]
-write_all(files)
-# df = pd.read_json(files[0])
-# print(files)
-conn.close()
-print(f"{Fore.GREEN}The process was completed in {datetime.now()-now}")
-
 def main(mytimer: func.TimerRequest) -> None:
-    utc_timestamp = datetime.datetime.utcnow().replace(
-        tzinfo=datetime.timezone.utc).isoformat()
+    
+    colorama.init(autoreset=True)
 
-    if mytimer.past_due:
-        logging.info('The timer is past due!')
+    xml = open("TimerTrigger1/body.xml").read()
+    df = pd.read_json("TimerTrigger1/HttpClientConfig.json")
+    
+    config = load_config()
+    server = config['server']
+    database = config['database']
+    username = config['username']
+    password = config['password']   
+    driver= '{ODBC Driver 17 for SQL Server}'
+    conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
 
-    logging.info('Python timer trigger function ran at %s', utc_timestamp)
+    files = get_records(xml, df)
+    latest_dir = enum_paths(config["azure_storage_connectionstring"], config["json_container"])
+
+    files = upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], files)
+
+    write_all(files, conn)
+
+    conn.close()
+    print(f"{Fore.GREEN}The process was completed in {datetime.now()-now}")
