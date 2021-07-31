@@ -18,3 +18,4 @@ pyyaml
 fast_to_sql
 pyodbc
 bs4
+lxml

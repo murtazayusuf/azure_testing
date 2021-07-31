@@ -14,11 +14,13 @@ from colorama import Fore
 import pyodbc
 from fast_to_sql import fast_to_sql as fts
 from bs4 import BeautifulSoup
+import logging 
+import azure.functions as func
 
 colorama.init(autoreset=True)
 
-xml = open("body.xml").read()
-df = pd.read_json("HttpClientConfig.json")
+xml = open("TimerTrigger1/body.xml").read()
+df = pd.read_json("TimerTrigger1/HttpClientConfig.json")
 headers = df['headers'][0]
 url = df['url'][0]
 
@@ -87,7 +89,7 @@ def load_config():
     This function loads the config file.
     """
     dir_root = os.path.dirname(os.path.abspath(__file__))
-    with open(dir_root + "/config.yaml", "r") as yamlfile:
+    with open(dir_root + "\config.yaml", "r") as yamlfile:
         return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
 config = load_config()
@@ -249,3 +251,11 @@ write_all(files)
 conn.close()
 print(f"{Fore.GREEN}The process was completed in {datetime.now()-now}")
 
+def main(mytimer: func.TimerRequest) -> None:
+    utc_timestamp = datetime.datetime.utcnow().replace(
+        tzinfo=datetime.timezone.utc).isoformat()
+
+    if mytimer.past_due:
+        logging.info('The timer is past due!')
+
+    logging.info('Python timer trigger function ran at %s', utc_timestamp)
