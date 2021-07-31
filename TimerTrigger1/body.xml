@@ -1,0 +1,10 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns="http://schemas.planview.com/PlanviewEnterprise/Services/QueryService/2012/12">
+<soapenv:Header/>
+<soapenv:Body>
+<ns:Read>
+<ns:sqlQuery>
+SELECT TOP (1000) planning_code ,resource_code ,start_date ,finish_date ,type ,code1, 'assignments' as tableName FROM [ip].[assignments]
+</ns:sqlQuery>
+</ns:Read>
+</soapenv:Body>
+</soapenv:Envelope>

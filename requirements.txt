@@ -1,0 +1,20 @@
+# DO NOT include azure-functions-worker in this file
+# The Python Worker is managed by Azure Functions platform
+# Manually managing azure-functions-worker may cause unexpected issues
+
+azure-functions
+datetime
+pandas
+progressbar
+progress 
+progress-bar
+numpy
+requests
+xml-python
+azure-storage-file-datalake
+colorama 
+regex
+pyyaml 
+fast_to_sql
+pyodbc
+bs4

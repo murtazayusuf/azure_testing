@@ -1,0 +1,9 @@
+---
+azure_storage_connectionstring: "DefaultEndpointsProtocol=https;AccountName=ssdc;AccountKey=hhJ6ia1JRsJN8IACX0zkP2g4natm4rDzKSbZY7NIvCERwP1W36iFLOhK0rF+tQtSNCCfnefr5KUgcTrhg1dREw==;EndpointSuffix=core.windows.net"
+# azure_storage_connectionstring: "Hello"
+json_container: "hello"
+server : 'jgdevplanviewdbs01.database.windows.net'
+database : 'PlanviewDataMart'
+username : 'murtaza'
+password : 'xP-vQp++'
+table : 'NewTest'
