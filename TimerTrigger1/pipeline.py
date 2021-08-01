@@ -35,7 +35,7 @@ def get_records(xml, df):
     for query in queries:
         data = xml.replace(xml[f_index:r_index], query)
         xml_text = requests.post(url, data=data, headers=headers).text
-        now = datetime.now().strftime("%Y_%b_%d_%H_%M_%S_%f")
+        # now = datetime.now().strftime("%Y_%b_%d_%H_%M_%S_%f")
         # xml_file = open(now+"_unprocessed_response.xml", "w")
         # n = xml_file.write(response)
         # xml_file.close()
@@ -75,8 +75,8 @@ def get_records(xml, df):
         df = df.drop_duplicates()
         # df = df[df['primarykey'] != '']
         print(df.info())
-        df.to_json(now+"_processed_response.json", orient='records')
-        loc_files += [now+"_processed_response.json"]
+        # df.to_json(now+"_processed_response.json", orient='records')
+        loc_files += [df]
     print(f"{Fore.GREEN}Records recieved successfully!")
     return loc_files
 
@@ -118,23 +118,21 @@ def upload_raw(latest_dir, connection_string, container_name, files):
         location = "tmp/out/"+today
 
     dir_ = location+"/"
-    processed = []
-    for fl in files:
-        df = pd.read_json(fl)
+    for df in files:
+        # df = pd.read_json(fl)
         # os.remove(fl)
         # fl = fl.replace('unprocessed', 'processed')
-        df.to_json(fl, orient='records')
+        # df.to_json(fl, orient='records')
+        now = datetime.now().strftime("%Y_%b_%d_%H_%M_%S_%f")
         file = DataLakeFileClient.from_connection_string(connection_string, 
-                                                file_system_name=container_name, file_path=dir_+fl)
+                                                file_system_name=container_name, file_path=dir_+now+"_processed_response.json")
 
-        f = open(fl, 'r')
-        data = f.read()
-        f.close()
-        file.upload_data(data, overwrite=True)
-        processed += ["./"+fl]
+        # f = open(fl, 'r')
+        # data = f.read()
+        # f.close()
+        file.upload_data(df, overwrite=True)
         
     print(f"{Fore.GREEN}Data written into the datalake successfully!!")
-    return processed
 
 def create_table(table, data, conn):
     """
@@ -215,8 +213,7 @@ def write_all(files, conn):
     This function writes the records into the corresponding tables in the database.
     """
     
-    for path in files:
-        df = pd.read_json(path)
+    for df in files:
         df = df.astype('string')
         cols = [string.lower() for string in df.columns]
         df.columns = cols
@@ -224,7 +221,7 @@ def write_all(files, conn):
         df = df.drop('tablename', axis=1)
         create_table(table=table, data=df, conn=conn)
         write_data_in_sql(table_name=table, data=df, conn=conn)
-        os.remove(path)
+        # os.remove(path)
 
 def main(mytimer: func.TimerRequest) -> None:
     
@@ -244,7 +241,7 @@ def main(mytimer: func.TimerRequest) -> None:
     files = get_records(xml, df)
     latest_dir = enum_paths(config["azure_storage_connectionstring"], config["json_container"])
 
-    files = upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], files)
+    upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], files)
 
     write_all(files, conn)
 
