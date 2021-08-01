@@ -84,8 +84,8 @@ def load_config():
     """
     This function loads the config file.
     """
-    dir_root = os.path.dirname(os.path.abspath(__file__))
-    with open(dir_root + "config.yaml", "r") as yamlfile:
+    # dir_root = os.path.dirname(os.path.abspath(__file__))
+    with open("TimerTrigger1/config.yaml", "r") as yamlfile:
         return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
 def enum_paths(connection_string, container_name):
