@@ -130,7 +130,7 @@ def upload_raw(latest_dir, connection_string, container_name, files):
         # f = open(fl, 'r')
         # data = f.read()
         # f.close()
-        file.upload_data(df.to_dict('records'), overwrite=True)
+        file.upload_data(str(df.to_dict('records')).replace("'", '"'), overwrite=True)
         
     print(f"{Fore.GREEN}Data written into the datalake successfully!!")
 
