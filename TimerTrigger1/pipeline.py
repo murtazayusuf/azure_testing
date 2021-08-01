@@ -131,7 +131,7 @@ def upload_raw(latest_dir, connection_string, container_name, files):
         data = f.read()
         f.close()
         file.upload_data(data, overwrite=True)
-        processed += [fl]
+        processed += ["./"+fl]
         
     print(f"{Fore.GREEN}Data written into the datalake successfully!!")
     return processed
