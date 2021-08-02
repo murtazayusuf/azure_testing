@@ -134,79 +134,85 @@ def upload_raw(latest_dir, connection_string, container_name, files):
         
     print(f"{Fore.GREEN}Data written into the datalake successfully!!")
 
-def create_table(table, data, conn):
-    """
-    This function creates a table in the database. Call this function only once or it will raise an error.
-    """
-    try:
-        print(f"{Fore.BLUE}The table is being created...")
-        df = data
-        columns = list(df.columns)
-        query = ''
-        for col in columns:
-            query += col+' VARCHAR(100), '
-        cursor = conn.cursor()
-        cursor.execute(f'CREATE TABLE {table} ({query[:-2]})')#(work_id NVARCHAR(50), Project_Category NVARCHAR(50), project NVARCHAR(50), primarykey NVARCHAR(50), Work_Department NVARCHAR(50), last_updated_on NVARCHAR(50))')
+# def create_table(table, data, conn):
+#     """
+#     This function creates a table in the database. Call this function only once or it will raise an error.
+#     """
+#     try:
+#         print(f"{Fore.BLUE}The table is being created...")
+#         df = data
+#         columns = list(df.columns)
+#         query = ''
+#         for col in columns:
+#             query += col+' VARCHAR(100), '
+#         cursor = conn.cursor()
+#         cursor.execute(f'CREATE TABLE {table} ({query[:-2]})')#(work_id NVARCHAR(50), Project_Category NVARCHAR(50), project NVARCHAR(50), primarykey NVARCHAR(50), Work_Department NVARCHAR(50), last_updated_on NVARCHAR(50))')
 
-        conn.commit()
-        print(f"{Fore.GREEN}The table was created successfully!!")
-        return True
-    except Exception as e:
-        print("The table with the name \""+table+"\" already exists, \nWriting the records to the existing table")
-        return False
-        # print(e)
+#         conn.commit()
+#         print(f"{Fore.GREEN}The table was created successfully!!")
+#         return True
+#     except Exception as e:
+#         print("The table with the name \""+table+"\" already exists, \nWriting the records to the existing table")
+#         return False
+#         # print(e)
 
 def write_data_in_sql(table_name, data, conn):
     """
     This function writes the json file into the sql database table given in 'table_name' argument.
     """
-    try:
-        print("The data is being written into the {table} table".format(table=table_name))
-        print(f"{Fore.BLUE}This process might take a while...")
-        query = 'SELECT * FROM '+table_name
-        cursor = conn.cursor()
+    # try:
+    table_name = table_name.replace("[", "").replace("]", "")
+    print("The data is being written into the {table} table".format(table=table_name))
+    print(f"{Fore.BLUE}This process might take a while...")
+    query = 'SELECT * FROM '+table_name
+    cursor = conn.cursor()
+    tables_query = """SELECT table_schema [schema],  table_name [name]
+                      FROM INFORMATION_SCHEMA.TABLES
+                      GO"""
+    df = data
+    df = df[df['primarykey']!='']
+    tables_df = pd.read_sql_query(tables_query, conn)
+    ls = list(tables_df['schema']+"."+tables_df['name'])
+    if table_name in ls:
         results = pd.read_sql_query(query, conn)
-        df = data
-        df = df[df['primarykey']!='']
-        if results.empty:
-            results = df
-        else:
-            print("Detecting changes...")
-            change = df.loc[~df.set_index(list(df.columns)).index.isin(results.set_index(list(results.columns)).index)]
-            change = change.astype('string')
-            if len(change.index)!=0 and len(change.index)!=1:
-                cursor.execute('''
-                    DELETE FROM {table_name} 
-                    WHERE primarykey IN {ppl};'''.format(ppl=tuple(change.primarykey), table_name=table_name))
-                conn.commit()
-            elif len(change.index)==1:
-                cursor.execute('''
-                    DELETE FROM {table_name} 
-                    WHERE primarykey = \'{ppl}\';'''.format(ppl=change.primarykey[0], table_name=table_name))
-                conn.commit()
+    else:
+        results = pd.DataFrame(columns=df.columns)
 
-            results = change
-            
-        if results.empty:
-            print(f"{Fore.GREEN}No changes detected.")
-        elif results.shape[0] <= 20000:
-            create_statement = fts.fast_to_sql(results, table_name, conn, if_exists="append")
+    
+    if results.empty:
+        results = df
+    else:
+        print("Detecting changes...")
+        change = df.loc[~df.set_index(list(df.columns)).index.isin(results.set_index(list(results.columns)).index)]
+        change = change.astype('string')
+        if len(change.index)!=0 and len(change.index)!=1:
+            cursor.execute('''
+                DELETE FROM {table_name} 
+                WHERE primarykey IN {ppl};'''.format(ppl=tuple(change.primarykey), table_name=table_name))
             conn.commit()
-            
-            print(f"{Fore.GREEN}The data was written into the database successfully!!")
-        else:
-            spaces = [int(i) for i in np.linspace(0, results.shape[0], 100)]
-            with Bar('Writing', fill='#', suffix='%(percent).1f%% - %(eta)ds') as bar:
-                for i in range(len(spaces)-1):
-                    fts.fast_to_sql(results[spaces[i]:spaces[i+1]], table_name, conn, if_exists="append")
-                    bar.next()
+        elif len(change.index)==1:
+            cursor.execute('''
+                DELETE FROM {table_name} 
+                WHERE primarykey = \'{ppl}\';'''.format(ppl=change.primarykey[0], table_name=table_name))
+            conn.commit()
+
+        results = change
+    
+    if results.empty:
+        print(f"{Fore.GREEN}No changes detected.")
+    elif results.shape[0] <= 20000:
+        create_statement = fts.fast_to_sql(results, table_name, conn, if_exists="append")
+        conn.commit()
+        
+        print(f"{Fore.GREEN}The data was written into the database successfully!!")
+    else:
+        spaces = [int(i) for i in np.linspace(0, results.shape[0], 100)]
+        with Bar('Writing', fill='#', suffix='%(percent).1f%% - %(eta)ds') as bar:
+            for i in range(len(spaces)-1):
+                fts.fast_to_sql(results[spaces[i]:spaces[i+1]], table_name, conn, if_exists="append")
                 bar.next()
-            conn.commit()
-            
-            # print(tuple(change.primarykey))
-    except Exception as e:
-        print(f"{Fore.RED}Following error occurred during execution:")
-        print(str(e))
+            bar.next()
+        conn.commit()
 
 def write_all(files, conn):
     """
@@ -219,7 +225,7 @@ def write_all(files, conn):
         df.columns = cols
         table = df['tablename'][0]
         df = df.drop('tablename', axis=1)
-        create_table(table=table, data=df, conn=conn)
+        # create_table(table=table, data=df, conn=conn)
         write_data_in_sql(table_name=table, data=df, conn=conn)
         # os.remove(path)
 
