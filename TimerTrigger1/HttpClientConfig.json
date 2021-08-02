@@ -9,7 +9,7 @@
     },
     "sqlQueries": [
         {
-            "SqlQuery": "SELECT  [structure_code] as primaryKey, [structure_name], [structure_code], [description], [last_updated_on], '[ip].[structure]' as tableName FROM [ip].[structure]"
+            "SqlQuery": "SELECT top 100 [structure_code] as primaryKey, [structure_name], [structure_code], [description], [last_updated_on], '[ip].[structure]' as tableName FROM [ip].[structure]"
         }
         ]
     }
