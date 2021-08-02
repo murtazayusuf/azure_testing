@@ -18,7 +18,7 @@
             "SqlQuery": "SELECT  dsc_code+anc_code as primaryKey, [dsc_code], [anc_code], [anc_depth], '[ip].[structure_tree]' as tableName FROM [ip].[structure_tree]"
         },
         {        
-            "SqlQuery": "SELECT [workflow_id],[wf_template_id] ,[entity_type],[planning_code],[log_number],[request_code],[wbs_template_code],[model_code],[budget_template_code],[initial_status_code] ,[start_silent_ind],[invest_struc_name],[strategy_code],[service_code],[asset_code],[agrmnt_code],[resume_primary_ind],[resume_notif_ind],[resume_notif_resp_tp],[resume_notif_role],[resume_last_status],[fm_model_id],[cri_code],[product_code],[transaction_id],'[ip].[workflow]' as tableName FROM [ip].[workflow]"
+            "SqlQuery": "SELECT [workflow_id] as primaryKey, [workflow_id],[wf_template_id] ,[entity_type],[planning_code],[log_number],[request_code],[wbs_template_code],[model_code],[budget_template_code],[initial_status_code] ,[start_silent_ind],[invest_struc_name],[strategy_code],[service_code],[asset_code],[agrmnt_code],[resume_primary_ind],[resume_notif_ind],[resume_notif_resp_tp],[resume_notif_role],[resume_last_status],[fm_model_id],[cri_code],[product_code],[transaction_id],'[ip].[workflow]' as tableName FROM [ip].[workflow]"
         } 
 
         ]
