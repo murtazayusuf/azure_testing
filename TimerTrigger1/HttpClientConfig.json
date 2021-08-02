@@ -9,14 +9,17 @@
     },
     "sqlQueries": [
         {
-            "SqlQuery": "SELECT Top 10 [structure_code] as primaryKey, [structure_name], [structure_code], [description], [last_updated_on], '[ip].[structure]' as tableName FROM [ip].[structure]"
+            "SqlQuery": "SELECT  [structure_code] as primaryKey, [structure_name], [structure_code], [description], [last_updated_on], '[ip].[structure]' as tableName FROM [ip].[structure]"
         },
         {
-            "SqlQuery": "SELECT Top 10 [planning_code] as primaryKey, [planning_Code], [short_name], [ppl_code] , [code22], '[ip].[planning_entity]' as tableName FROM [ip].[planning_entity]"
+            "SqlQuery": "SELECT  [planning_code] as primaryKey, [planning_Code], [short_name], [ppl_code] , [code22], '[ip].[planning_entity]' as tableName FROM [ip].[planning_entity]"
         },
         {
-            "SqlQuery": "SELECT Top 10 dsc_code+anc_code as primaryKey, [dsc_code], [anc_code], [anc_depth], '[ip].[structure_tree]' as tableName FROM [ip].[structure_tree]"
-        }
+            "SqlQuery": "SELECT  dsc_code+anc_code as primaryKey, [dsc_code], [anc_code], [anc_depth], '[ip].[structure_tree]' as tableName FROM [ip].[structure_tree]"
+        },
+        {        
+            "SqlQuery": "SELECT [workflow_id],[wf_template_id] ,[entity_type],[planning_code],[log_number],[request_code],[wbs_template_code],[model_code],[budget_template_code],[initial_status_code] ,[start_silent_ind],[invest_struc_name],[strategy_code],[service_code],[asset_code],[agrmnt_code],[resume_primary_ind],[resume_notif_ind],[resume_notif_resp_tp],[resume_notif_role],[resume_last_status],[fm_model_id],[cri_code],[product_code],[transaction_id],'[ip].[workflow]' as tableName FROM [ip].[workflow]"
+        } 
 
         ]
     }
