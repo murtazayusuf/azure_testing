@@ -199,7 +199,7 @@ def write_data_in_sql(table_name, data, conn):
         results = change
     
     if results.empty:
-        print(f"{Fore.GREEN}No changes detected..")
+        print(f"{Fore.GREEN}No changes detected...")
     elif results.shape[0] <= 20000:
         create_statement = fts.fast_to_sql(results, table_name, conn, if_exists="append")
         conn.commit()
