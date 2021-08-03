@@ -201,11 +201,13 @@ def write_data_in_sql(table_name, data, conn):
     if results.empty:
         print(f"{Fore.GREEN}No changes detected...")
     elif results.shape[0] <= 20000:
+        print("Changes Detected!")
         create_statement = fts.fast_to_sql(results, table_name, conn, if_exists="append")
         conn.commit()
         
         print(f"{Fore.GREEN}The data was written into the database successfully!!")
     else:
+        print("Changes Detected!")
         spaces = [int(i) for i in np.linspace(0, results.shape[0], 100)]
         with Bar('Writing', fill='#', suffix='%(percent).1f%% - %(eta)ds') as bar:
             for i in range(len(spaces)-1):
@@ -213,6 +215,8 @@ def write_data_in_sql(table_name, data, conn):
                 bar.next()
             bar.next()
         conn.commit()
+
+        print(f"{Fore.GREEN}The data was written into the database successfully!!")
 
 def write_all(files, conn):
     """
@@ -242,12 +246,13 @@ def main(mytimer: func.TimerRequest) -> None:
     username = config['username']
     password = config['password']   
     driver= '{ODBC Driver 17 for SQL Server}'
-    conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
 
     files = get_records(xml, df)
     latest_dir = enum_paths(config["azure_storage_connectionstring"], config["json_container"])
 
     upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], files)
+
+    conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
 
     write_all(files, conn)
 
