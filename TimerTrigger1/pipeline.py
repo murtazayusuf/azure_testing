@@ -85,7 +85,7 @@ def load_config():
     This function loads the config file.
     """
     # dir_root = os.path.dirname(os.path.abspath(__file__))
-    with open("TimerTrigger1/config.yaml", "r") as yamlfile:
+    with open("config.yaml", "r") as yamlfile:
         return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
 def enum_paths(connection_string, container_name):
@@ -156,11 +156,19 @@ def upload_raw(latest_dir, connection_string, container_name, files):
 #         return False
 #         # print(e)
 
-def write_data_in_sql(table_name, data, conn):
+def write_data_in_sql(table_name, data, config):
     """
     This function writes the json file into the sql database table given in 'table_name' argument.
     """
     # try:
+    server = config['server']
+    database = config['database']
+    username = config['username']
+    password = config['password']   
+    driver= '{ODBC Driver 17 for SQL Server}'
+
+    conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+
     table_name = table_name.replace("[", "").replace("]", "")
     print("The data is being written into the {table} table".format(table=table_name))
     print(f"{Fore.BLUE}This process might take a while...")
@@ -177,20 +185,36 @@ def write_data_in_sql(table_name, data, conn):
         results = pd.read_sql_query(query, conn)
     else:
         results = pd.DataFrame(columns=df.columns)
+    conn.close()
 
-    
+    conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+    cursor = conn.cursor()
+
     if results.empty:
         results = df
     else:
         print("Detecting changes...")
         change = df.loc[~df.set_index(list(df.columns)).index.isin(results.set_index(list(results.columns)).index)]
         change = change.astype('string')
+        del [df, results]
         if len(change.index)!=0 and len(change.index)!=1:
-            cursor.execute('''
-                DELETE FROM {table_name} 
-                WHERE primarykey IN {ppl};'''.format(ppl=tuple(change.primarykey), table_name=table_name))
-            conn.commit()
+            print("Changes Detected!")
+            if change.shape[0] <= 5000:
+                cursor.execute('''
+                    DELETE FROM {table_name} 
+                    WHERE primarykey IN {ppl};'''.format(ppl=tuple(change.primarykey), table_name=table_name))
+                conn.commit()
+            else:
+                spaces = [int(i) for i in np.linspace(0, change.shape[0], 100)]
+                for i in range(len(spaces)-1):
+                    cursor.execute('''
+                        DELETE FROM {table_name} 
+                        WHERE primarykey IN {ppl};'''.format(ppl=tuple(change.primarykey[spaces[i]:spaces[i+1]]), table_name=table_name))
+                    conn.commit()
+
+
         elif len(change.index)==1:
+            print("Changes Detected!")
             cursor.execute('''
                 DELETE FROM {table_name} 
                 WHERE primarykey = \'{ppl}\';'''.format(ppl=change.primarykey[0], table_name=table_name))
@@ -201,13 +225,13 @@ def write_data_in_sql(table_name, data, conn):
     if results.empty:
         print(f"{Fore.GREEN}No changes detected...")
     elif results.shape[0] <= 20000:
-        print("Changes Detected!")
+        print("Writing data to the database")
         create_statement = fts.fast_to_sql(results, table_name, conn, if_exists="append")
         conn.commit()
         
         print(f"{Fore.GREEN}The data was written into the database successfully!!")
     else:
-        print("Changes Detected!")
+        print("Writing data to the database")
         spaces = [int(i) for i in np.linspace(0, results.shape[0], 100)]
         with Bar('Writing', fill='#', suffix='%(percent).1f%% - %(eta)ds') as bar:
             for i in range(len(spaces)-1):
@@ -217,8 +241,9 @@ def write_data_in_sql(table_name, data, conn):
         conn.commit()
 
         print(f"{Fore.GREEN}The data was written into the database successfully!!")
+    conn.close()
 
-def write_all(files, conn):
+def write_all(files, config):
     """
     This function writes the records into the corresponding tables in the database.
     """
@@ -230,31 +255,25 @@ def write_all(files, conn):
         table = df['tablename'][0]
         df = df.drop('tablename', axis=1)
         # create_table(table=table, data=df, conn=conn)
-        write_data_in_sql(table_name=table, data=df, conn=conn)
+        write_data_in_sql(table_name=table, data=df, config=config)
         # os.remove(path)
 
 def main(mytimer: func.TimerRequest) -> None:
     
     colorama.init(autoreset=True)
 
-    xml = open("TimerTrigger1/body.xml").read()
-    df = pd.read_json("TimerTrigger1/HttpClientConfig.json")
+    xml = open("body.xml").read()
+    df = pd.read_json("HttpClientConfig.json")
     
     config = load_config()
-    server = config['server']
-    database = config['database']
-    username = config['username']
-    password = config['password']   
-    driver= '{ODBC Driver 17 for SQL Server}'
+    
 
     files = get_records(xml, df)
     latest_dir = enum_paths(config["azure_storage_connectionstring"], config["json_container"])
 
     upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], files)
 
-    conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+    
+    write_all(files, config)
 
-    write_all(files, conn)
-
-    conn.close()
     print(f"{Fore.GREEN}The process was completed in {datetime.now()-now}")
