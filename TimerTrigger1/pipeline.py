@@ -217,7 +217,7 @@ def write_data_in_sql(table_name, data, config):
             print("Changes Detected!")
             cursor.execute('''
                 DELETE FROM {table_name} 
-                WHERE primarykey = \'{ppl}\';'''.format(ppl=change.primarykey[0], table_name=table_name))
+                WHERE primarykey IN (\'{ppl}\');'''.format(ppl=change.primarykey[0], table_name=table_name))
             conn.commit()
 
         results = change
