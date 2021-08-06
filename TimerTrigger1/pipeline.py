@@ -256,6 +256,7 @@ def write_all(files, config):
         df = df.drop('tablename', axis=1)
         # create_table(table=table, data=df, conn=conn)
         write_data_in_sql(table_name=table, data=df, config=config)
+        del [df]
         # os.remove(path)
 
 def main(mytimer: func.TimerRequest) -> None:
