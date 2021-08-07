@@ -9,7 +9,7 @@
     },
     "sqlQueries": [
         {  
-            "SqlQuery": "select workflow_id as primaryKey, 'ip.workflow' as tableName, * from ip.workflow"
+            "SqlQuery": "ip.planning_entity"
         }
         ]
     }

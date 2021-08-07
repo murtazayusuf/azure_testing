@@ -81,7 +81,7 @@ def load_config():
     This function loads the config file.
     """
     # dir_root = os.path.dirname(os.path.abspath(__file__))
-    with open("config.yaml", "r") as yamlfile:
+    with open("TimerTrigger1/config.yaml", "r") as yamlfile:
         return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
 def enum_paths(connection_string, container_name):
@@ -296,8 +296,8 @@ def main(mytimer: func.TimerRequest) -> None:
     
     colorama.init(autoreset=True)
 
-    xml = open("body.xml").read()
-    df = pd.read_json("HttpClientConfig_1.json")
+    xml = open("TimerTrigger1/body.xml").read()
+    df = pd.read_json("TimerTrigger1/HttpClientConfig.json")
     
     config = load_config()
 
