@@ -64,14 +64,14 @@ def get_records(xml, df, query):
     data_ = np.array([data])
     # print(xml_text)
     data_ = np.reshape(data_, (int(len(data)/num_cols), num_cols))
-
+    del [data_, xml_text, file]
     df = pd.DataFrame(data_, columns=col_name)
     df = df.drop_duplicates()
     # df = df[df['primarykey'] != '']
     print(df.info())
     # df.to_json(now+"_processed_response.json", orient='records')
     print(f"{Fore.GREEN}Records recieved successfully!")
-    del [data_, xml_text, file]
+    
     return df
 
 def load_config():
@@ -125,7 +125,7 @@ def upload_raw(latest_dir, connection_string, container_name, df):
     # data = f.read()
     # f.close()
     file.upload_data(str(df.to_dict('records')).replace("'", '"'), overwrite=True)
-        
+    del [df]
     print(f"{Fore.GREEN}Data written into the datalake successfully!!")
 
 # def create_table(table, data, conn):
@@ -319,7 +319,7 @@ def main(mytimer: func.TimerRequest) -> None:
         # print(delta)
             write_all(data, config)
             
-            del[data]
+            del [data]
         except Exception as e:
             print(e)
 
