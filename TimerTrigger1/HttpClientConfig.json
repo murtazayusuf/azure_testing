@@ -8,8 +8,8 @@
         "Content-Type": "text/xml"
     },
     "sqlQueries": [
-        {
-            "SqlQuery": "select structure_code as primaryKey, 'ip.structure' as tableName, * from ip.structure"
+        {  
+            "SqlQuery": "select workflow_id as primaryKey, 'ip.workflow' as tableName, * from ip.workflow"
         }
         ]
     }
