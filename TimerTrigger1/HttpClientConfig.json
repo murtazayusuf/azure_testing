@@ -16,9 +16,6 @@
         },
         {  
             "SqlQuery": "select dsc_code+anc_code as primaryKey, 'ip.structure_tree' as tableName, * from ip.structure_tree"
-        },
-        {  
-            "SqlQuery": "select workflow_id+place as primaryKey, 'ip.wf_team' as tableName, * from ip.wf_team"
         }
         ]
     }
