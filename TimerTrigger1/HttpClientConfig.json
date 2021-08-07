@@ -9,7 +9,7 @@
     },
     "sqlQueries": [
         {  
-            "SqlQuery": "ip.planning_entity"
+            "SqlQuery": "ip.structure"
         }
         ]
     }

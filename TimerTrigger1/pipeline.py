@@ -243,7 +243,7 @@ def upload_raw(latest_dir, connection_string, container_name, df):
 #         print(f"{Fore.GREEN}The data was written into the database successfully!!")
 #     conn.close()
 
-def write_all(df, config):
+def write_all(df, config, table):
     """
     This function writes the records into the corresponding tables in the database.
     """
@@ -251,8 +251,8 @@ def write_all(df, config):
     df = df.astype('string')
     cols = [string.lower() for string in df.columns]
     df.columns = cols
-    table = df['tablename'][0]
-    df = df.drop('tablename', axis=1)
+    # table = df['tablename'][0]
+    # df = df.drop('tablename', axis=1)
     # create_table(table=table, data=df, conn=conn)
     # write_data_in_sql(table_name=table, data=df, config=config, delta=delta)
     server = config['server']
@@ -265,7 +265,7 @@ def write_all(df, config):
 
     print("Writing data to the database")
     cursor = conn.cursor()
-    table = table.replace("[", "").replace("]", "")
+    # table = table.replace("[", "").replace("]", "")
     tables_query = """SELECT table_schema [schema],  table_name [name]
                       FROM INFORMATION_SCHEMA.TABLES
                       GO"""
@@ -334,7 +334,7 @@ def main(mytimer: func.TimerRequest) -> None:
 
         # delta = get_records(xml, df)
         # print(delta)
-            write_all(data, config)
+            write_all(data, config, table)
             print(data.info())
             print(f"{Fore.GREEN}Records recieved successfully!")
             # del [data]
