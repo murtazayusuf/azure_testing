@@ -16,10 +16,11 @@ from fast_to_sql import fast_to_sql as fts
 from bs4 import BeautifulSoup
 import logging 
 import azure.functions as func
+from tqdm import tqdm
 
 
 def get_records(xml, df, query):
-    print(f"{Fore.YELLOW}Getting the data from client...")
+    
     headers = df['headers'][0]
     url = df['url'][0]
 
@@ -39,8 +40,8 @@ def get_records(xml, df, query):
     # xml_text = response
     # xml_.close()
     # os.remove(now+"_unprocessed_response.xml")
+    
     file = BeautifulSoup(xml_text, 'xml')
-    xml_text = ''
     cols = file.findAll("e:string")
     attri = []
     for col in cols:
@@ -48,7 +49,6 @@ def get_records(xml, df, query):
     col_name = attri[:int(len(attri)/2)]
     col_type = attri[int(len(attri)/2):]
     records = file.findAll("anyType")
-    file = ''
     data = []
     for record in records:
         data += [record.text]
@@ -61,29 +61,27 @@ def get_records(xml, df, query):
     #     if type_ == 'integer':
     #         col_type[i] = int
 
-    num_cols = len(col_name)
+    # num_cols = len(col_name)
 
-    data_ = np.array([data])
-    # print(xml_text)
-    data_ = np.reshape(data_, (int(len(data)/num_cols), num_cols))
+    # data_ = np.array([data])
+    # # print(xml_text)
+    # data_ = np.reshape(data_, (int(len(data)/num_cols), num_cols))
 
-    df = pd.DataFrame(data_, columns=col_name)
-    df = df.drop_duplicates()
-    df = df.astype('string')
+    # df = pd.DataFrame(data_, columns=col_name)
+    # df = df.drop_duplicates()
     # df = df[df['primarykey'] != '']
-    print(df.info())
-    data_ = ''
+    # print(df.info())
     # df.to_json(now+"_processed_response.json", orient='records')
-    print(f"{Fore.GREEN}Records recieved successfully!")
     
-    return df
+    del [xml_text, file]
+    return data
 
 def load_config():
     """
     This function loads the config file.
     """
     # dir_root = os.path.dirname(os.path.abspath(__file__))
-    with open("TimerTrigger1/config.yaml", "r") as yamlfile:
+    with open("config.yaml", "r") as yamlfile:
         return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
 def enum_paths(connection_string, container_name):
@@ -129,7 +127,7 @@ def upload_raw(latest_dir, connection_string, container_name, df):
     # data = f.read()
     # f.close()
     file.upload_data(str(df.to_dict('records')).replace("'", '"'), overwrite=True)
-    df = ''
+        
     print(f"{Fore.GREEN}Data written into the datalake successfully!!")
 
 # def create_table(table, data, conn):
@@ -277,7 +275,7 @@ def write_all(df, config):
         cursor.execute(f"DROP TABLE {table}")
         conn.commit()
     if df.shape[0] > 10000:
-        spaces = [int(i) for i in np.linspace(0, df.shape[0], 50)]
+        spaces = [int(i) for i in np.linspace(0, df.shape[0], 100)]
         with Bar('Writing', fill='#', suffix='%(percent).1f%% - %(eta)ds') as bar:
             for i in range(len(spaces)-1):
                 fts.fast_to_sql(df[spaces[i]:spaces[i+1]], table, conn, if_exists="append")
@@ -287,7 +285,7 @@ def write_all(df, config):
     else:
         fts.fast_to_sql(df, table, conn, if_exists='append')
     
-    df = ''
+    del [df]
 
     conn.commit()
     conn.close()
@@ -298,21 +296,36 @@ def main(mytimer: func.TimerRequest) -> None:
     
     colorama.init(autoreset=True)
 
-    xml = open("TimerTrigger1/body.xml").read()
-    df = pd.read_json("TimerTrigger1/HttpClientConfig.json")
+    xml = open("body.xml").read()
+    df = pd.read_json("HttpClientConfig_1.json")
     
     config = load_config()
 
     n_queries = len(df["sqlQueries"][0])
 
-    queries = []
+    tables = []
     for i in range(n_queries):
-        queries += [df["sqlQueries"][0][i]['SqlQuery']]
+        tables += [df["sqlQueries"][0][i]['SqlQuery']]
 
     latest_dir = enum_paths(config["azure_storage_connectionstring"], config["json_container"])
-    for query in queries:
+    for table in tables:
         try:
-            data = get_records(xml, df, query)
+            print(f"{Fore.YELLOW}Getting the data from client...")
+            table = table.replace("[", "").replace("]", "")
+            schema_name = table[:table.find('.')]
+            table_name = table[table.find('.')+1:]
+            query = f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'{table_name}' and TABLE_SCHEMA = N'{schema_name}'"
+            columns = get_records(xml, df, query)
+            print(columns)
+            # spaces = np.array([int(i) for i in np.linspace(0, rows, 100)])
+            data = pd.DataFrame()
+            for col in tqdm(columns):
+                # query = f"<![CDATA[Select * From (Select Row_Number() Over (Order By last_updated_on) As RowNum, * From {table}) t2 Where RowNum > {spaces[i]} and RowNum <= {spaces[i+1]}]]>"
+                query = f"SELECT {col} FROM {table}"
+                # data = data.append(get_records(xml, df, query).drop('RowNum', axis=1))
+                data[col] = get_records(xml, df, query)
+                
+            
             upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], data)
         # n_queries = len(df["sqlQueries"][0])
         # queries = []
@@ -322,8 +335,9 @@ def main(mytimer: func.TimerRequest) -> None:
         # delta = get_records(xml, df)
         # print(delta)
             write_all(data, config)
-            
-            data = ''
+            print(data.info())
+            print(f"{Fore.GREEN}Records recieved successfully!")
+            # del [data]
         except Exception as e:
             print(e)
 
