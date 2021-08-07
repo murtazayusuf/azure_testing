@@ -40,6 +40,7 @@ def get_records(xml, df, query):
     # xml_.close()
     # os.remove(now+"_unprocessed_response.xml")
     file = BeautifulSoup(xml_text, 'xml')
+    xml_text = ''
     cols = file.findAll("e:string")
     attri = []
     for col in cols:
@@ -47,28 +48,31 @@ def get_records(xml, df, query):
     col_name = attri[:int(len(attri)/2)]
     col_type = attri[int(len(attri)/2):]
     records = file.findAll("anyType")
+    file = ''
     data = []
     for record in records:
         data += [record.text]
 
-    for i, type_ in enumerate(col_type):
-        if type_ == 'string':
-            col_type[i] = str
-        if type_ == 'dateTime':
-            col_type[i] = "datetime64[ns]"
-        if type_ == 'integer':
-            col_type[i] = int
+    # for i, type_ in enumerate(col_type):
+    #     if type_ == 'string':
+    #         col_type[i] = str
+    #     if type_ == 'dateTime':
+    #         col_type[i] = "datetime64[ns]"
+    #     if type_ == 'integer':
+    #         col_type[i] = int
 
     num_cols = len(col_name)
 
     data_ = np.array([data])
     # print(xml_text)
     data_ = np.reshape(data_, (int(len(data)/num_cols), num_cols))
-    del [data_, xml_text, file]
+
     df = pd.DataFrame(data_, columns=col_name)
     df = df.drop_duplicates()
+    df = df.astype('string')
     # df = df[df['primarykey'] != '']
     print(df.info())
+    data_ = ''
     # df.to_json(now+"_processed_response.json", orient='records')
     print(f"{Fore.GREEN}Records recieved successfully!")
     
@@ -125,7 +129,7 @@ def upload_raw(latest_dir, connection_string, container_name, df):
     # data = f.read()
     # f.close()
     file.upload_data(str(df.to_dict('records')).replace("'", '"'), overwrite=True)
-    del [df]
+    df = ''
     print(f"{Fore.GREEN}Data written into the datalake successfully!!")
 
 # def create_table(table, data, conn):
@@ -283,7 +287,7 @@ def write_all(df, config):
     else:
         fts.fast_to_sql(df, table, conn, if_exists='append')
     
-    del [df]
+    df = ''
 
     conn.commit()
     conn.close()
@@ -319,7 +323,7 @@ def main(mytimer: func.TimerRequest) -> None:
         # print(delta)
             write_all(data, config)
             
-            del [data]
+            data = ''
         except Exception as e:
             print(e)
 
