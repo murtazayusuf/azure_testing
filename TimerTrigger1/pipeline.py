@@ -307,7 +307,7 @@ def main(mytimer: func.TimerRequest) -> None:
     for i in range(n_queries):
         tables += [df["sqlQueries"][0][i]['SqlQuery']]
 
-    latest_dir = enum_paths(config["azure_storage_connectionstring"], config["json_container"])
+    # latest_dir = enum_paths(config["azure_storage_connectionstring"], config["json_container"])
     for table in tables:
         try:
             print(f"{Fore.YELLOW}Getting the data from client...")
@@ -326,7 +326,7 @@ def main(mytimer: func.TimerRequest) -> None:
                 data[col] = get_records(xml, df, query)
                 
             
-            upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], data)
+            # upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], data)
         # n_queries = len(df["sqlQueries"][0])
         # queries = []
         # for i in range(n_queries):
