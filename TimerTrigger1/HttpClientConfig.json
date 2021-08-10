@@ -9,7 +9,7 @@
     },
     "sqlQueries": [
         {  
-            "SqlQuery": "ip.structure"
+            "SqlQuery": "Select 'planning_code' as primaryKey, 'ip.planning_entity' as tableName, * FROM ip.planning_entity"
         }
         ]
     }

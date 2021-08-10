@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 import logging 
 import azure.functions as func
 from tqdm import tqdm
+import math
 
 
 def get_records(xml, df, query):
@@ -30,6 +31,7 @@ def get_records(xml, df, query):
 
     data = xml.replace(xml[f_index:r_index], query)
     xml_text = requests.post(url, data=data, headers=headers).text
+    # print(xml_text)
     # now = datetime.now().strftime("%Y_%b_%d_%H_%M_%S_%f")
     # xml_file = open(now+"_unprocessed_response.xml", "w")
     # n = xml_file.write(response)
@@ -42,6 +44,7 @@ def get_records(xml, df, query):
     # os.remove(now+"_unprocessed_response.xml")
     
     file = BeautifulSoup(xml_text, 'xml')
+    # print(file)
     cols = file.findAll("e:string")
     attri = []
     for col in cols:
@@ -61,27 +64,27 @@ def get_records(xml, df, query):
     #     if type_ == 'integer':
     #         col_type[i] = int
 
-    # num_cols = len(col_name)
+    num_cols = len(col_name)
 
-    # data_ = np.array([data])
+    data_ = np.array([data])
     # # print(xml_text)
-    # data_ = np.reshape(data_, (int(len(data)/num_cols), num_cols))
+    data_ = np.reshape(data_, (int(len(data)/num_cols), num_cols))
 
-    # df = pd.DataFrame(data_, columns=col_name)
-    # df = df.drop_duplicates()
+    df = pd.DataFrame(data_, columns=col_name)
+    df = df.drop_duplicates()
     # df = df[df['primarykey'] != '']
     # print(df.info())
     # df.to_json(now+"_processed_response.json", orient='records')
     
     del [xml_text, file]
-    return data
+    return df
 
 def load_config():
     """
     This function loads the config file.
     """
     # dir_root = os.path.dirname(os.path.abspath(__file__))
-    with open("TimerTrigger1/config.yaml", "r") as yamlfile:
+    with open("config.yaml", "r") as yamlfile:
         return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
 def enum_paths(connection_string, container_name):
@@ -243,87 +246,125 @@ def upload_raw(latest_dir, connection_string, container_name, df):
 #         print(f"{Fore.GREEN}The data was written into the database successfully!!")
 #     conn.close()
 
-def write_all(df, config, table):
-    """
-    This function writes the records into the corresponding tables in the database.
-    """
+# def write_all(df, config):
+#     """
+#     This function writes the records into the corresponding tables in the database.
+#     """
 
-    df = df.astype('string')
-    cols = [string.lower() for string in df.columns]
-    df.columns = cols
-    # table = df['tablename'][0]
-    # df = df.drop('tablename', axis=1)
-    # create_table(table=table, data=df, conn=conn)
-    # write_data_in_sql(table_name=table, data=df, config=config, delta=delta)
-    server = config['server']
-    database = config['database']
-    username = config['username']
-    password = config['password']   
-    driver= '{ODBC Driver 17 for SQL Server}'
+#     df = df.astype('string')
+#     cols = [string.lower() for string in df.columns]
+#     df.columns = cols
+#     table = df['tablename'][0]
+#     df = df.drop('tablename', axis=1)
+#     # create_table(table=table, data=df, conn=conn)
+#     # write_data_in_sql(table_name=table, data=df, config=config, delta=delta)
+#     server = config['server']
+#     database = config['database']
+#     username = config['username']
+#     password = config['password']   
+#     driver= '{ODBC Driver 17 for SQL Server}'
 
-    conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+#     conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
 
-    print("Writing data to the database")
-    cursor = conn.cursor()
-    # table = table.replace("[", "").replace("]", "")
-    tables_query = """SELECT table_schema [schema],  table_name [name]
-                      FROM INFORMATION_SCHEMA.TABLES
-                      GO"""
-    tables_df = pd.read_sql_query(tables_query, conn)
-    ls = list(tables_df['schema']+"."+tables_df['name'])
-    if table in ls:
-        cursor.execute(f"DROP TABLE {table}")
-        conn.commit()
-    if df.shape[0] > 10000:
-        spaces = [int(i) for i in np.linspace(0, df.shape[0], 100)]
-        with Bar('Writing', fill='#', suffix='%(percent).1f%% - %(eta)ds') as bar:
-            for i in range(len(spaces)-1):
-                fts.fast_to_sql(df[spaces[i]:spaces[i+1]], table, conn, if_exists="append")
-                bar.next()
-            bar.next()
+#     print("Writing data to the database")
+#     cursor = conn.cursor()
+#     table = table.replace("[", "").replace("]", "")
+#     tables_query = """SELECT table_schema [schema],  table_name [name]
+#                       FROM INFORMATION_SCHEMA.TABLES
+#                       GO"""
+#     tables_df = pd.read_sql_query(tables_query, conn)
+#     ls = list(tables_df['schema']+"."+tables_df['name'])
+#     if table in ls:
+#         cursor.execute(f"DROP TABLE {table}")
+#         conn.commit()
+#     if df.shape[0] > 10000:
+#         spaces = [int(i) for i in np.linspace(0, df.shape[0], 100)]
+#         with Bar('Writing', fill='#', suffix='%(percent).1f%% - %(eta)ds') as bar:
+#             for i in range(len(spaces)-1):
+#                 fts.fast_to_sql(df[spaces[i]:spaces[i+1]], table, conn, if_exists="append")
+#                 bar.next()
+#             bar.next()
     
-    else:
-        fts.fast_to_sql(df, table, conn, if_exists='append')
+#     else:
+#         fts.fast_to_sql(df, table, conn, if_exists='append')
     
-    del [df]
+#     del [df]
 
-    conn.commit()
-    conn.close()
-    print(f"{Fore.GREEN}The data was written into the database successfully!!")
-        # os.remove(path)
+#     conn.commit()
+#     conn.close()
+#     print(f"{Fore.GREEN}The data was written into the database successfully!!")
+#         # os.remove(path)
 
 def main(mytimer: func.TimerRequest) -> None:
     
     colorama.init(autoreset=True)
 
-    xml = open("TimerTrigger1/body.xml").read()
-    df = pd.read_json("TimerTrigger1/HttpClientConfig.json")
+    xml = open("body.xml").read()
+    df = pd.read_json("HttpClientConfig.json")
     
     config = load_config()
 
     n_queries = len(df["sqlQueries"][0])
 
-    tables = []
+    queries = []
     for i in range(n_queries):
-        tables += [df["sqlQueries"][0][i]['SqlQuery']]
+        queries += [df["sqlQueries"][0][i]['SqlQuery']]
 
     # latest_dir = enum_paths(config["azure_storage_connectionstring"], config["json_container"])
-    for table in tables:
+    for query in queries:
         try:
             print(f"{Fore.YELLOW}Getting the data from client...")
+            table_query = "<![CDATA["+query[:6]+" top 1 "+query[7:]+"]]>"
+            table_def = get_records(xml, df, table_query)
+
+            cols = [string.lower() for string in table_def.columns]
+            table_def.columns = cols
+            table = table_def['tablename'][0]
+            primary_key = table_def['primarykey'][0]
             table = table.replace("[", "").replace("]", "")
-            schema_name = table[:table.find('.')]
-            table_name = table[table.find('.')+1:]
-            query = f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'{table_name}' and TABLE_SCHEMA = N'{schema_name}'"
-            columns = get_records(xml, df, query)
-            print(columns)
+            print(table)
+            # schema_name = table[:table.find('.')]
+            # table_name = table[table.find('.')+1:]
+            row_query = f"SELECT COUNT({primary_key}) FROM {table}"
+            n_rows = int(get_records(xml, df, row_query).iloc[0])
+            batch_size = 2500
+            n_trips = math.ceil(n_rows/batch_size)
             # spaces = np.array([int(i) for i in np.linspace(0, rows, 100)])
+            
+            # create_table(table=table, data=df, conn=conn)
+            # write_data_in_sql(table_name=table, data=df, config=config, delta=delta)
+            server = config['server']
+            database = config['database']
+            username = config['username']
+            password = config['password']   
+            driver= '{ODBC Driver 17 for SQL Server}'
+
+            
+            
             data = pd.DataFrame()
-            for col in tqdm(columns):
+            for trip in tqdm(range(n_trips)):
                 # query = f"<![CDATA[Select * From (Select Row_Number() Over (Order By last_updated_on) As RowNum, * From {table}) t2 Where RowNum > {spaces[i]} and RowNum <= {spaces[i+1]}]]>"
-                query = f"SELECT {col} FROM {table}"
-                # data = data.append(get_records(xml, df, query).drop('RowNum', axis=1))
-                data[col] = get_records(xml, df, query)
+                
+                batch_query = f"""<![CDATA[{query} tb1 
+ORDER BY tb1.{primary_key} 
+OFFSET ({trip})*{batch_size} ROWS 
+FETCH NEXT {batch_size} ROWS ONLY]]>"""
+            #     # data = data.append(get_records(xml, df, query).drop('RowNum', axis=1))
+                data = get_records(xml, df, batch_query)
+                data = data.astype('string')
+                cols = [string.lower() for string in data.columns]
+                data.columns = cols
+                data = data.drop(['tablename','primarykey'], axis=1)
+                conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+                if trip==0:
+                    fts.fast_to_sql(data, table, conn, if_exists='replace')
+                else:
+                    fts.fast_to_sql(data, table, conn, if_exists='append')
+                
+                conn.commit()
+                conn.close()
+                
+
                 
             
             # upload_raw(latest_dir, config["azure_storage_connectionstring"], config["json_container"], data)
@@ -334,9 +375,10 @@ def main(mytimer: func.TimerRequest) -> None:
 
         # delta = get_records(xml, df)
         # print(delta)
-            write_all(data, config, table)
-            print(data.info())
+            # write_all(data, config)
+            # print(data.info())
             print(f"{Fore.GREEN}Records recieved successfully!")
+            
             # del [data]
         except Exception as e:
             print(e)
