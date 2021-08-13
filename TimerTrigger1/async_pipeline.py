@@ -181,7 +181,7 @@ def main():#mytimer: func.TimerRequest) -> None:
     colorama.init(autoreset=True)
 
     xml = open("TimerTrigger1/body.xml").read()
-    df = pd.read_json("TimerTrigger1/HttpClientConfig_1.json")
+    df = pd.read_json("TimerTrigger1/HttpClientConfig.json")
     
     config = load_config()
 
