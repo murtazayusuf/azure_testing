@@ -1,5 +1,5 @@
 {
-  "scriptFile": "pipeline.py",
+  "scriptFile": "async_pipeline.py",
   "bindings": [
     {
       "name": "mytimer",
