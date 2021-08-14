@@ -176,7 +176,7 @@ def load_config():
         return yaml.load(yamlfile, Loader=yaml.FullLoader)
 
 
-def main():#mytimer: func.TimerRequest) -> None:
+def main(mytimer: func.TimerRequest) -> None:
     
     colorama.init(autoreset=True)
 
@@ -270,5 +270,3 @@ def main():#mytimer: func.TimerRequest) -> None:
         #     print(e)
 
     print(f"{Fore.GREEN}The process was completed in {datetime.now()-now}")
-
-main()

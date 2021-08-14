@@ -20,3 +20,5 @@ pyodbc
 bs4
 lxml
 tqdm
+asyncio
+aiohttp

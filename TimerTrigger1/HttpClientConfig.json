@@ -9,7 +9,7 @@
     },
     "sqlQueries": [
         {  
-            "SqlQuery": "Select 'planning_code' as primaryKey, 'ip.planning_entity' as tableName, * FROM ip.planning_entity"
+            "SqlQuery": "SELECT distinct pe.ppl_code+pe.short_name as primaryKey, pe.[ppl_code], pe.[short_name] AS 'work_id', s.last_updated_on, (select description from ip.structure where ppl_code = structure_code) as 'project', (SELECT s.[description] FROM ip.structure s WHERE s.structure_code = pe.code22) AS 'Project_Category', (SELECT s.[description] FROM ip.structure s WHERE s.structure_code = (SELECT st.anc_code FROM ip.structure_tree st WHERE st.anc_depth = 5 AND st.dsc_code = pe.ppl_code)) AS 'Work_Department', 'helloworld' as tablename FROM [ip].[planning_entity] pe INNER JOIN ip.structure s ON pe.planning_code = s.structure_code INNER JOIN ip.structure_tree st ON s.structure_code = st.dsc_code"
         }
         ]
     }
