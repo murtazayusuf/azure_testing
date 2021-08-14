@@ -227,18 +227,20 @@ def main():#mytimer: func.TimerRequest) -> None:
         username = config['username']
         password = config['password']   
         driver= '{ODBC Driver 17 for SQL Server}'
-        spaces = [int(i) for i in np.linspace(0, n_trips, 10)]
+        spaces = [int(i) for i in np.linspace(0, 1000, 200)]
         data = pd.DataFrame()
-        if n_rows>100000:
-            for i in tqdm(range(len(spaces)-1)):
-                df2 = asyncio.run(get_symbols(xml, df, query, s_trips=spaces[i], l_trips=spaces[i+1], primary_key=primary_key, batch_size=batch_size))
-                data = data.append(df2, ignore_index=True)
-                print(data.info())
-        else:
-            query = f"<![CDATA[{query}]]>"
-            data = get_records(xml, df, query)
-            data = data.drop('tablename', axis=1)
+        # if n_rows>100000:
+        for i in tqdm(range(len(spaces)-1)):
+            df2 = asyncio.run(get_symbols(xml, df, query, s_trips=spaces[i], l_trips=spaces[i+1], primary_key=primary_key, batch_size=batch_size))
+            data = data.append(df2, ignore_index=True)
             print(data.info())
+            if df2.empty:
+                break
+        # else:
+        #     query = f"<![CDATA[{query}]]>"
+        #     data = get_records(xml, df, query)
+        #     data = data.drop('tablename', axis=1)
+        #     print(data.info())
         # print(data.info())
         conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
         
