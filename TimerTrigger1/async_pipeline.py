@@ -32,7 +32,7 @@ async def get_tasks(session, xml, df, query, trip, primary_key, batch_size):
     
         
     # for trip in range(n_trips):
-    batch_query = f"""<![CDATA[{query} 
+    batch_query = f"""<![CDATA[{query}
 ORDER BY {primary_key} 
 OFFSET ({trip})*{str(batch_size)} ROWS 
 FETCH NEXT {str(batch_size)} ROWS ONLY]]>"""
@@ -63,6 +63,7 @@ async def get_symbols(xml, df, query, s_trips, l_trips, primary_key, batch_size)
         #     #   print(await response.read())
             xml_text = response
             file = BeautifulSoup(xml_text, 'xml')
+            # print(file)
             xml_text = ''
             cols = file.findAll("e:string")
             attri = []
@@ -270,3 +271,5 @@ def main(mytimer: func.TimerRequest) -> None:
         #     print(e)
 
     print(f"{Fore.GREEN}The process was completed in {datetime.now()-now}")
+
+# main()
