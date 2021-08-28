@@ -9,10 +9,7 @@
     },
     "sqlQueries": [
         {
-            "SqlQuery": "select 'ip.planning_entity' as tablename, planning_code as primaryKey, * from ip.planning_entity where last_updated_on > DATEADD(ww,-1,getdate())"
-        },
-        {
-            "SqlQuery": "select 'dbo.testing2' as tablename, planning_code as primaryKey, * from ip.planning_entity where last_updated_on > DATEADD(ww,-1,getdate())"
+            "SqlQuery": "select 'ip.structure_tree' as tableName, dsc_code+anc_code as primaryKey, [dsc_code], [anc_code], [anc_depth] from [ip].[structure_tree]"
         }
         ]
     }
