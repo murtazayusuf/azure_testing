@@ -9,13 +9,13 @@
     },
     "sqlQueries": [
         {
+            "SqlQuery": "select 'ip.planning_entity' as tableName, planning_code as primaryKey, [planning_code], [short_name], [schedule_start], [schedule_finish],[schedule_du_nb], [actual_start], [actual_finish],[lid], [lpd], [forecast_start],[forecast_finish], [forecast_du_nb], [forecast_load], [code1], [code2], [code3], [code4], [code5], [code6], [code7], [code8], [percent_complete],[calendar], [duration_type], [priority], [previous_start], [previous_finish], [previous_du_nb],[code22], [code24], [code25], [code26], [dont_progress], [consolidated], [smi_code], [smi_factor], [cpm_rollup_block], [milestone], [enter_progress], [ppl_code] from ip.planning_entity where last_updated_on > DATEADD(YY,-2,getdate())"
+        },
+        {
             "SqlQuery": "select 'ip.structure' as tableName, structure_code as primaryKey, [structure_name], [structure_code], [place], [father_code], [description], [user_flag], [depth], [detailed], [import_code], [last_updated_on] from ip.structure where last_updated_on > DATEADD(YY,-2,getdate())"
         },
         {
             "SqlQuery": "select 'ip.structure_tree' as tableName, dsc_code+anc_code as primaryKey, [dsc_code], [anc_code], [anc_depth] from [ip].[structure_tree]"
-        },
-        {
-            "SqlQuery": "select 'ip.planning_entity' as tableName, planning_code as primaryKey, [planning_code], [short_name], [schedule_start], [schedule_finish],[schedule_du_nb], [actual_start], [actual_finish],[lid], [lpd], [forecast_start],[forecast_finish], [forecast_du_nb], [forecast_load], [code1], [code2], [code3], [code4], [code5], [code6], [code7], [code8], [percent_complete],[calendar], [duration_type], [priority], [previous_start], [previous_finish], [previous_du_nb],[code22], [code24], [code25], [code26], [dont_progress], [consolidated], [smi_code], [smi_factor], [cpm_rollup_block], [milestone], [enter_progress], [ppl_code] from ip.planning_entity where last_updated_on > DATEADD(YY,-2,getdate())"
         }
         ]
     }
