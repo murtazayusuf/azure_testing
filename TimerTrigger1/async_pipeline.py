@@ -232,39 +232,47 @@ def main(mytimer: func.TimerRequest) -> None:
         data = pd.DataFrame()
         # if n_rows>100000:
         for i in tqdm(range(len(spaces)-1)):
+            print(f"================== Batch {i+1} ==================")
             df2 = asyncio.run(get_symbols(xml, df, query, s_trips=spaces[i], l_trips=spaces[i+1], primary_key=primary_key, batch_size=batch_size))
-            data = data.append(df2, ignore_index=True)
-            print(data.info())
+            # data = data.append(df2, ignore_index=True)
+            print(df2.info())
             if df2.empty:
                 break
+            conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+            print(f"================== Batch {i+1} ==================")
+        
+            print("Writing data to the database")
+            
+            if df2.shape[0]>10000:
+                spaces2 = [int(i) for i in np.linspace(0, df2.shape[0], 5)]
+                
+                for j in tqdm(range(len(spaces2)-1)):
+                    if i==0 and j==0:
+                        create_statement = fts.fast_to_sql(df2[spaces2[j]:spaces2[j+1]], dest_table, conn, if_exists="replace")
+                    else:
+                        create_statement = fts.fast_to_sql(df2[spaces2[j]:spaces2[j+1]], dest_table, conn, if_exists="append")
+                    
+            else:
+                if i == 0:
+                    create_statement = fts.fast_to_sql(df2, dest_table, conn, if_exists="replace")
+                else:
+                    create_statement = fts.fast_to_sql(df2, dest_table, conn, if_exists="append")
+                
+            print(f"================== Batch {i+1} ==================")
+
+            conn.commit()
+            conn.close()
         # else:
         #     query = f"<![CDATA[{query}]]>"
         #     data = get_records(xml, df, query)
         #     data = data.drop('tablename', axis=1)
         #     print(data.info())
         # print(data.info())
-        conn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
         
         
-        print("Writing data to the database")
-        
-        if data.shape[0]>10000:
-            spaces = [int(i) for i in np.linspace(0, data.shape[0], 50)]
-            
-            for i in tqdm(range(len(spaces)-1)):
-                if i==0:
-                    create_statement = fts.fast_to_sql(data[spaces[i]:spaces[i+1]], dest_table, conn, if_exists="replace")
-                else:
-                    create_statement = fts.fast_to_sql(data[spaces[i]:spaces[i+1]], dest_table, conn, if_exists="append")
-                
-        else:
-            create_statement = fts.fast_to_sql(data, dest_table, conn, if_exists="replace")
-
-        conn.commit()
-        conn.close()
-        
-        
-        print(f"{Fore.GREEN}Records recieved successfully!")
+        p = 1
+        print(f"{Fore.GREEN}Query {p} transferred successfully!")
+        p+=1
         
         # del [data]
         # except Exception as e:
