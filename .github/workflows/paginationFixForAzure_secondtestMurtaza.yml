@@ -15,7 +15,7 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@v2
@@ -34,10 +34,10 @@ jobs:
         popd
 
     - name: 'Run Azure Functions Action'
-      uses: Azure/functions-action@v1.3.1
+      uses: Azure/functions-action@v1
       id: fa
       with:
         app-name: 'secondtestMurtaza'
         slot-name: 'production'
         package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_909afadc6547456681070d85ad381b38 }}
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_6904e96aae6b4683b3c0ecceba1e93f7 }}
